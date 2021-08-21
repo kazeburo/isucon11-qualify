@@ -1284,3 +1284,16 @@ func isValidConditionFormat(conditionStr string) bool {
 func getIndex(c echo.Context) error {
 	return c.File(frontendContentsPath + "/index.html")
 }
+
+func splitPostIsuConditionRequest(req []PostIsuConditionRequest, n int) [][]PostIsuConditionRequest {
+	ret := make([][]PostIsuConditionRequest, 0, 1+len(req)/n)
+
+	for i := 0; i < len(req); i += n {
+		end := i + n
+		if len(req) < end {
+			end = len(req)
+		}
+		ret = append(ret, req[i:end])
+	}
+	return ret
+}
