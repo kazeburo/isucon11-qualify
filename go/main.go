@@ -271,7 +271,10 @@ func main() {
 	db.SetMaxOpenConns(10)
 	defer db.Close()
 
-	go updateTrend()
+	startTrend := os.Getenv("START_TREND")
+	if startTrend != "" {
+		go updateTrend()
+	}
 
 	postIsuConditionTargetBaseURL = os.Getenv("POST_ISUCONDITION_TARGET_BASE_URL")
 	if postIsuConditionTargetBaseURL == "" {
