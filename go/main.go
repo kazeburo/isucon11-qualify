@@ -208,7 +208,7 @@ func init() {
 	}
 }
 
-var use_profiler = true
+var use_profiler = false
 
 func initProfiler() {
 	if !use_profiler {
