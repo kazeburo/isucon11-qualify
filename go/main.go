@@ -1364,16 +1364,13 @@ func postIsuCondition(c echo.Context) error {
 		if !isValidConditionFormat(cond.Condition) {
 			return c.String(http.StatusBadRequest, "bad request body")
 		}
-		condLevel, err := calculateConditionLevel(cond.Condition)
-		if err != nil {
-			return c.String(http.StatusBadRequest, "bad request body")
-		}
+		warnCount := strings.Count(cond.Condition, "=true")
 
 		_, err = tx.Exec(
 			"INSERT INTO `isu_condition`"+
 				"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `condition_level`, `message`)"+
 				"	VALUES (?, ?, ?, ?, ?, ?)",
-			jiaIsuUUID, timestamp, cond.IsSitting, cond.Condition, condLevel, cond.Message)
+			jiaIsuUUID, timestamp, cond.IsSitting, cond.Condition, warnCount, cond.Message)
 		if err != nil {
 			c.Logger().Errorf("db error: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
