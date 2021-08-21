@@ -1396,6 +1396,10 @@ func isValidConditionFormat(conditionStr string) bool {
 }
 
 func getIndex(c echo.Context) error {
+	if c.Request().Header.Get("If-Modified-Since") != "" {
+		return c.NoContent(http.StatusNotModified)
+	}
+	c.Response().Header().Add("Cache-Control", "public, max-age=86400")
 	return c.File(frontendContentsPath + "/index.html")
 }
 
