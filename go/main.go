@@ -839,11 +839,16 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 	var startTimeInThisHour time.Time
 	var condition IsuCondition
 
-	rows, err := tx.Queryx("SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY `timestamp` ASC", jiaIsuUUID)
+	rows, err := tx.Queryx("SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? "+
+		" WHERE timestamp BETWEEN ? AND ? "+
+		" ORDER BY `timestamp` ASC",
+		graphDate, graphDate.Add(time.Hour*24),
+		jiaIsuUUID)
 	if err != nil {
 		return nil, fmt.Errorf("db error: %v", err)
 	}
 
+	// conditionsInThisHour にpoolしておいて、Hour 毎にまとめて calculateGraphDataPoint して dataPoints に append する
 	for rows.Next() {
 		err = rows.StructScan(&condition)
 		if err != nil {
@@ -851,8 +856,8 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 		}
 
 		truncatedConditionTime := condition.Timestamp.Truncate(time.Hour)
-		if truncatedConditionTime != startTimeInThisHour {
-			if len(conditionsInThisHour) > 0 {
+		if truncatedConditionTime != startTimeInThisHour { //  xx:00 毎にまとめるために、Hour の切り替わりを判定
+			if len(conditionsInThisHour) > 0 { // 前の Hour のデータが残っていたので処理する
 				data, err := calculateGraphDataPoint(conditionsInThisHour)
 				if err != nil {
 					return nil, err
@@ -866,6 +871,7 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 						ConditionTimestamps: timestampsInThisHour})
 			}
 
+			// 前のHour の処理が終わったので いろいろ初期化
 			startTimeInThisHour = truncatedConditionTime
 			conditionsInThisHour = []IsuCondition{}
 			timestampsInThisHour = []int64{}
@@ -874,6 +880,7 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 		timestampsInThisHour = append(timestampsInThisHour, condition.Timestamp.Unix())
 	}
 
+	// ループを抜けたあとで 未処理のデータが conditionsInThisHour にあるので処理
 	if len(conditionsInThisHour) > 0 {
 		data, err := calculateGraphDataPoint(conditionsInThisHour)
 		if err != nil {
@@ -889,8 +896,8 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 	}
 
 	endTime := graphDate.Add(time.Hour * 24)
-	startIndex := len(dataPoints)
-	endNextIndex := len(dataPoints)
+	startIndex := len(dataPoints)   // len(dataPoints) の値自体に意味はない。 未設定判定フラグ
+	endNextIndex := len(dataPoints) // len(dataPoints) の値自体に意味はない。 未設定判定フラグ
 	for i, graph := range dataPoints {
 		if startIndex == len(dataPoints) && !graph.StartAt.Before(graphDate) {
 			startIndex = i
@@ -902,6 +909,7 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 
 	filteredDataPoints := []GraphDataPointWithInfo{}
 	if startIndex < endNextIndex {
+		// この条件になるのは startIndex が設定されたとき、つまり !graph.StartAt.Before(graphDate) が起こったとき
 		filteredDataPoints = dataPoints[startIndex:endNextIndex]
 	}
 
@@ -909,6 +917,7 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 	index := 0
 	thisTime := graphDate
 
+	// graphDate に 24H ずつ add しながらループ
 	for thisTime.Before(graphDate.Add(time.Hour * 24)) {
 		var data *GraphDataPoint
 		timestamps := []int64{}
