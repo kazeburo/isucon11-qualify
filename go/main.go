@@ -270,6 +270,7 @@ func main() {
 		return
 	}
 	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
 	defer db.Close()
 
 	startTrend := os.Getenv("START_TREND")
