@@ -524,11 +524,34 @@ func getIsuList(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	uuids := []interface{}{}
+	values := []string{}
+	for _, isu := range isuList {
+		uuids = append(uuids, isu.JIAIsuUUID)
+		values = append(values, "?")
+	}
+
+	lastConditions := []IsuCondition{}
+	err = tx.Select(
+		&lastConditions,
+		" SELECT i.* FROM `isu_condition` i JOIN (SELECT `jia_isu_uuid`, MAX(`timestamp`) AS max_t FROM `isu_condition` WHERE `jia_isu_uuid` IN ("+strings.Join(values, ",")+") GROUP BY `jia_isu_uuid`) AS t ON i.jia_isu_uuid = t.jia_isu_uuid AND i.timestamp = t.max_t",
+		uuids...,
+	)
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	lcMap := map[string]IsuCondition{}
+	for _, lc := range lastConditions {
+		lcMap[lc.JIAIsuUUID] = lc
+	}
+
 	responseList := []GetIsuListResponse{}
 	for _, isu := range isuList {
 		var lastCondition IsuCondition
 		foundLastCondition := true
-		err = tx.Get(&lastCondition, "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY `timestamp` DESC LIMIT 1",
+		/*err = tx.Get(&lastCondition, "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY `timestamp` DESC LIMIT 1",
 			isu.JIAIsuUUID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -537,7 +560,8 @@ func getIsuList(c echo.Context) error {
 				c.Logger().Errorf("db error: %v", err)
 				return c.NoContent(http.StatusInternalServerError)
 			}
-		}
+		}*/
+		lastCondition, foundLastCondition = lcMap[isu.JIAIsuUUID]
 
 		var formattedCondition *GetIsuConditionResponse
 		if foundLastCondition {
