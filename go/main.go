@@ -1075,8 +1075,8 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 	for label, _ := range conditionLevel {
 		countList, ok := label2count[label]
 		if ok {
-			values = append(values, "?")
 			for _, count := range countList {
+				values = append(values, "?")
 				params = append(params, count)
 			}
 		}
