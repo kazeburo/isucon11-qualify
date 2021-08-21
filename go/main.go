@@ -373,11 +373,10 @@ func postInitialize(c echo.Context) error {
 			c.Logger().Errorf("db error : %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		cLevel, err := calculateConditionLevel(condition.Condition)
-		if err != nil {
-			continue
-		}
-		_, err = db.Exec("UPDATE isu_condition SET `condition_level` = ? where `id` = ?", cLevel, condition.ID)
+
+		warnCount := strings.Count(condition.Condition, "=true")
+
+		_, err = db.Exec("UPDATE isu_condition SET `condition_level` = ? where `id` = ?", warnCount, condition.ID)
 		if err != nil {
 			c.Logger().Errorf("db error: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
