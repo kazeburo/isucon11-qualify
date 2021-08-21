@@ -1385,23 +1385,32 @@ func postIsuCondition(c echo.Context) error {
 	}
 
 	for _, cond := range req {
-		timestamp := time.Unix(cond.Timestamp, 0)
-
 		if !isValidConditionFormat(cond.Condition) {
 			return c.String(http.StatusBadRequest, "bad request body")
 		}
-		warnCount := strings.Count(cond.Condition, "=true")
+	}
 
-		_, err = tx.Exec(
-			"INSERT INTO `isu_condition`"+
-				"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `condition_level`, `message`)"+
-				"	VALUES (?, ?, ?, ?, ?, ?)",
-			jiaIsuUUID, timestamp, cond.IsSitting, cond.Condition, warnCount, cond.Message)
+	for _, req := range splitPostIsuConditionRequest(req, 10) { // 10 は適当 随時変更する @@@ TODO FIXME
+		query := "INSERT INTO `isu_condition`" +
+			"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `condition_level`, `message`)" +
+			"	VALUES "
+		values := make([]string, 0, len(req))
+		params := make([]interface{}, 0, len(req))
+		for _, cond := range req {
+			values = append(values, "(?, ?, ?, ?, ?, ?)")
+			params = append(params,
+				jiaIsuUUID,
+				time.Unix(cond.Timestamp, 0),
+				cond.IsSitting,
+				cond.Condition,
+				strings.Count(cond.Condition, "=true"),
+				cond.Message)
+		}
+		_, err = tx.Exec(query+strings.Join(values, ","), params...)
 		if err != nil {
 			c.Logger().Errorf("db error: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
-
 	}
 
 	err = tx.Commit()
@@ -1453,6 +1462,19 @@ func getIndex(c echo.Context) error {
 	}
 	c.Response().Header().Add("Cache-Control", "public, max-age=86400")
 	return c.File(frontendContentsPath + "/index.html")
+}
+
+func splitPostIsuConditionRequest(req []PostIsuConditionRequest, n int) [][]PostIsuConditionRequest {
+	ret := make([][]PostIsuConditionRequest, 0, 1+len(req)/n)
+
+	for i := 0; i < len(req); i += n {
+		end := i + n
+		if len(req) < end {
+			end = len(req)
+		}
+		ret = append(ret, req[i:end])
+	}
+	return ret
 }
 
 func splitPostIsuConditionRequest(req []PostIsuConditionRequest, n int) [][]PostIsuConditionRequest {
