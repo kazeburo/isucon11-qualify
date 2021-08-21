@@ -1061,6 +1061,27 @@ func getIsuConditions(c echo.Context) error {
 func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, conditionLevel map[string]interface{}, startTime time.Time,
 	limit int, isuName string) ([]*GetIsuConditionResponse, error) {
 
+	// conditionLevel の引数は 'warn', 'info', 'critical' が key
+	// isu_condition テーブルの condition_level は 0, 1, 2, 3
+	// 対応は 0=>info, 1, 2=>warn, 3=>critical
+	label2count := map[string][]int{
+		conditionLevelInfo:     []int{0},
+		conditionLevelWarning:  []int{1, 2},
+		conditionLevelCritical: []int{3},
+	}
+	values := make([]string, 0)
+	params := make([]interface{}, 0)
+
+	for label, _ := range conditionLevel {
+		countList, ok := label2count[label]
+		if ok {
+			values = append(values, "?")
+			for _, count := range countList {
+				params = append(params, count)
+			}
+		}
+	}
+
 	conditions := []IsuCondition{}
 	var err error
 
@@ -1068,16 +1089,24 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 		err = db.Select(&conditions,
 			"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ?"+
 				"	AND `timestamp` < ?"+
-				"	ORDER BY `timestamp` DESC",
+				" AND condition_level IN ("+strings.Join(values, ",")+")"+
+				"	ORDER BY `timestamp` DESC"+
+				" LIMIT ?",
 			jiaIsuUUID, endTime,
+			params,
+			limit,
 		)
 	} else {
 		err = db.Select(&conditions,
 			"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ?"+
 				"	AND `timestamp` < ?"+
 				"	AND ? <= `timestamp`"+
+				" AND condition_level IN ("+strings.Join(values, ",")+")"+
 				"	ORDER BY `timestamp` DESC",
+			" LIMIT ?",
 			jiaIsuUUID, endTime, startTime,
+			params,
+			limit,
 		)
 	}
 	if err != nil {
