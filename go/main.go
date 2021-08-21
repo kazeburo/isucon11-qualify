@@ -24,7 +24,6 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 )
 
@@ -236,8 +235,8 @@ func main() {
 	e.Debug = false
 	e.Logger.SetLevel(log.ERROR)
 
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
+	// e.Use(middleware.Logger())
+	// e.Use(middleware.Recover())
 
 	e.POST("/initialize", postInitialize)
 
