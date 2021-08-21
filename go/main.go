@@ -1134,7 +1134,7 @@ var trendLock sync.RWMutex
 var trendCache []byte
 
 func updateTrend() {
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(750 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		select {
