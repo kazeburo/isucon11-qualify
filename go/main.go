@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"compress/gzip"
 	"crypto/ecdsa"
 	"database/sql"
 	"encoding/json"
@@ -1290,13 +1289,8 @@ func genTrend() error {
 		return err
 	}
 
-	var buffer bytes.Buffer
-	ww, _ := gzip.NewWriterLevel(&buffer, gzip.BestCompression)
-	ww.Write(b)
-	ww.Close()
-
 	trendLock.Lock()
-	trendCache = buffer.Bytes()
+	trendCache = b
 	defer trendLock.Unlock()
 
 	return nil
@@ -1384,7 +1378,6 @@ func getTrend(c echo.Context) error {
 	*/
 	trendLock.RLock()
 	defer trendLock.RUnlock()
-	c.Response().Header().Set("Content-Encoding", "gzip")
 	return c.Blob(http.StatusOK, "application/json", trendCache)
 }
 
