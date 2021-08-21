@@ -1099,8 +1099,8 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 				"	AND `timestamp` < ?"+
 				"	AND ? <= `timestamp`"+
 				" AND condition_level IN ("+strings.Join(values, ",")+")"+
-				"	ORDER BY `timestamp` DESC",
-			" LIMIT ?",
+				"	ORDER BY `timestamp` DESC"+
+				" LIMIT ?",
 			jiaIsuUUID, endTime, startTime,
 			limit,
 		)
