@@ -1271,7 +1271,7 @@ func getIndex(c echo.Context) error {
 }
 
 func splitPostIsuConditionRequest(req []PostIsuConditionRequest, n int) [][]PostIsuConditionRequest {
-	ret := make([][]PostIsuConditionRequest, 1+len(req)/n)
+	ret := make([][]PostIsuConditionRequest, 0, 1+len(req)/n)
 
 	for i := 0; i < len(req); i += n {
 		end := i + n
