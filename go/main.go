@@ -865,7 +865,7 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 	var startTimeInThisHour time.Time
 	var condition IsuCondition
 
-	rows, err := tx.Queryx("SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? "+
+	rows, err := tx.Queryx("SELECT * FROM `isu_condition` FORCE INDEX(jia_isu_uuid_timestamp) WHERE `jia_isu_uuid` = ? "+
 		" AND timestamp BETWEEN ? AND ? "+
 		" ORDER BY `timestamp` ASC",
 		jiaIsuUUID,
@@ -1234,7 +1234,7 @@ func genTrend() error {
 		for _, isu := range isuList {
 			conditions := []IsuCondition{}
 			err = db.Select(&conditions,
-				"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY timestamp DESC",
+				"SELECT * FROM `isu_condition` FORCE INDEX(jia_isu_uuid_timestamp) WHERE `jia_isu_uuid` = ? ORDER BY timestamp DESC",
 				isu.JIAIsuUUID,
 			)
 			if err != nil {
