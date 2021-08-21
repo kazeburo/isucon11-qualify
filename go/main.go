@@ -1069,14 +1069,12 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 		conditionLevelCritical: []int{3},
 	}
 	values := make([]string, 0)
-	params := make([]interface{}, 0)
 
 	for label, _ := range conditionLevel {
 		countList, ok := label2count[label]
 		if ok {
 			for _, count := range countList {
-				values = append(values, "?")
-				params = append(params, count)
+				values = append(values, strconv.Itoa(count))
 			}
 		}
 	}
@@ -1092,7 +1090,6 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 				"	ORDER BY `timestamp` DESC"+
 				" LIMIT ?",
 			jiaIsuUUID, endTime,
-			params,
 			limit,
 		)
 	} else {
@@ -1104,7 +1101,6 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 				"	ORDER BY `timestamp` DESC",
 			" LIMIT ?",
 			jiaIsuUUID, endTime, startTime,
-			params,
 			limit,
 		)
 	}
