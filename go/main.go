@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/profiler"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
@@ -203,6 +204,27 @@ func init() {
 	jiaJWTSigningKey, err = jwt.ParseECPublicKeyFromPEM(key)
 	if err != nil {
 		log.Fatalf("failed to parse ECDSA public key: %v", err)
+	}
+}
+
+var use_profiler = true
+
+func initProfiler() {
+	if !use_profiler {
+		return
+	}
+
+	serviceVersion := time.Now().Format("2006.01.02.15.04")
+	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	if projectID == "" {
+		projectID = "xenon-heading-825"
+	}
+	if err := profiler.Start(profiler.Config{
+		Service:        "isu11q",
+		ServiceVersion: serviceVersion,
+		ProjectID:      projectID,
+	}); err != nil {
+		log.Fatal(err)
 	}
 }
 
