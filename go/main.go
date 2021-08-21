@@ -840,7 +840,7 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 	var condition IsuCondition
 
 	rows, err := tx.Queryx("SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? "+
-		" WHERE timestamp BETWEEN ? AND ? "+
+		" AND timestamp BETWEEN ? AND ? "+
 		" ORDER BY `timestamp` ASC",
 		jiaIsuUUID,
 		graphDate, graphDate.Add(time.Hour*24))
