@@ -15,6 +15,10 @@ CREATE TABLE `isu` (
    PRIMARY KEY(`id`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
 
+ALTER TABLE isu ADD INDEX `jia_isu_uuid_jia_user_id` (`jia_isu_uuid`, `jia_user_id`);
+ALTER TABLE isu ADD INDEX `jia_user_id` (`jia_user_id`);
+ALTER TABLE isu ADD INDEX `character` (`character`);
+
 CREATE TABLE `isu_condition` (
   `id` bigint AUTO_INCREMENT,
   `jia_isu_uuid` CHAR(36) NOT NULL,
@@ -32,6 +36,8 @@ CREATE TABLE `user` (
   `jia_user_id` VARCHAR(255) PRIMARY KEY,
   `created_at` DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
+
+ALTER TABLE user ADD INDEX `jia_user_id` (`jia_user_id`);
 
 CREATE TABLE `isu_association_config` (
   `name` VARCHAR(255) PRIMARY KEY,
