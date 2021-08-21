@@ -229,6 +229,8 @@ func initProfiler() {
 }
 
 func main() {
+	initProfiler()
+
 	e := echo.New()
 	e.Debug = true
 	e.Logger.SetLevel(log.DEBUG)
