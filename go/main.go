@@ -1427,7 +1427,7 @@ func postIsuCondition(c echo.Context) error {
 		}
 	}
 
-	for _, req := range splitPostIsuConditionRequest(req, 10) { // 10 は適当 随時変更する @@@ TODO FIXME
+	for _, req := range splitPostIsuConditionRequest(req, 100) { // 10 は適当 随時変更する @@@ TODO FIXME
 		query := "INSERT INTO `isu_condition`" +
 			"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `condition_level`, `message`)" +
 			"	VALUES "
