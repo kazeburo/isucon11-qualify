@@ -530,14 +530,16 @@ func getIsuList(c echo.Context) error {
 	}
 
 	lastConditions := []IsuCondition{}
-	err = tx.Select(
-		&lastConditions,
-		" SELECT i.* FROM `isu_condition` i JOIN (SELECT `jia_isu_uuid`, MAX(`timestamp`) AS max_t FROM `isu_condition` WHERE `jia_isu_uuid` IN ("+strings.Join(values, ",")+") GROUP BY `jia_isu_uuid`) AS t ON i.jia_isu_uuid = t.jia_isu_uuid AND i.timestamp = t.max_t",
-		uuids...,
-	)
-	if err != nil {
-		c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
+	if len(values) > 0 {
+		err = tx.Select(
+			&lastConditions,
+			" SELECT i.* FROM `isu_condition` i JOIN (SELECT `jia_isu_uuid`, MAX(`timestamp`) AS max_t FROM `isu_condition` WHERE `jia_isu_uuid` IN ("+strings.Join(values, ",")+") GROUP BY `jia_isu_uuid`) AS t ON i.jia_isu_uuid = t.jia_isu_uuid AND i.timestamp = t.max_t",
+			uuids...,
+		)
+		if err != nil {
+			c.Logger().Errorf("db error: %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
 	}
 
 	lcMap := map[string]IsuCondition{}
