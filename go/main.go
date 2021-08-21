@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/profiler"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
@@ -206,7 +207,30 @@ func init() {
 	}
 }
 
+var use_profiler = true
+
+func initProfiler() {
+	if !use_profiler {
+		return
+	}
+
+	serviceVersion := time.Now().Format("2006.01.02.15.04")
+	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	if projectID == "" {
+		projectID = "xenon-heading-825"
+	}
+	if err := profiler.Start(profiler.Config{
+		Service:        "isu11q",
+		ServiceVersion: serviceVersion,
+		ProjectID:      projectID,
+	}); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
+	initProfiler()
+
 	e := echo.New()
 	e.Debug = true
 	e.Logger.SetLevel(log.DEBUG)
@@ -1196,31 +1220,22 @@ func postIsuCondition(c echo.Context) error {
 	}
 
 	for _, cond := range req {
+		timestamp := time.Unix(cond.Timestamp, 0)
+
 		if !isValidConditionFormat(cond.Condition) {
 			return c.String(http.StatusBadRequest, "bad request body")
 		}
-	}
 
-	for _, req := range splitPostIsuConditionRequest(req, 10) { // 10 は適当 随時変更する @@@ TODO FIXME
-		query := "INSERT INTO `isu_condition`" +
-			"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`)" +
-			"	VALUES "
-		values := make([]string, 0, len(req))
-		params := make([]interface{}, 0, len(req))
-		for _, cond := range req {
-			values = append(values, "(?, ?, ?, ?, ?)")
-			params = append(params,
-				jiaIsuUUID,
-				time.Unix(cond.Timestamp, 0),
-				cond.IsSitting,
-				cond.Condition,
-				cond.Message)
-		}
-		_, err = tx.Exec(query+strings.Join(values, ","), params...)
+		_, err = tx.Exec(
+			"INSERT INTO `isu_condition`"+
+				"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`)"+
+				"	VALUES (?, ?, ?, ?, ?)",
+			jiaIsuUUID, timestamp, cond.IsSitting, cond.Condition, cond.Message)
 		if err != nil {
 			c.Logger().Errorf("db error: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
+
 	}
 
 	err = tx.Commit()
